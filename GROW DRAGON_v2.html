@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#5b8def">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%235b8def'/%3E%3Ctext x='50' y='72' font-size='70' font-weight='bold' fill='white' text-anchor='middle'%3E%2B%3C/text%3E%3C/svg%3E">
+<title>Считалочка</title>
+<style>
+  :root {
+    --bg:#f5f7ff; --card:#ffffff; --primary:#5b8def; --primary-dark:#4a75d0;
+    --green:#4ecb71; --red:#ff6b6b; --text:#2a2f45; --text-dim:#8a90a8; --gold:#ffc93c;
+    --shadow:rgba(91,141,239,.12);
+  }
+  body.dark {
+    --bg:#151b2b; --card:#232a3d; --primary:#7ba6ff; --primary-dark:#5b8def;
+    --green:#5fd98a; --red:#ff8080; --text:#e8ecf5; --text-dim:#9aa2bb; --gold:#ffd93d;
+    --shadow:rgba(0,0,0,.4);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); user-select:none; -webkit-user-select:none;
+    touch-action:manipulation; transition:background .3s, color .3s; }
+  #app { height:100dvh; position:relative;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .screen { position:absolute; inset:0; display:none; flex-direction:column; padding:inherit; }
+  .screen.active { display:flex; }
+  header { display:flex; justify-content:space-between; align-items:center;
+    padding:14px 20px; font-weight:600; gap:10px; }
+  .title { font-size:22px; font-weight:900; letter-spacing:.5px; }
+  .header-actions { display:flex; gap:8px; }
+  .icon-btn { width:44px; height:44px; border-radius:14px; background:var(--card);
+    border:none; font-family:inherit; font-size:22px; cursor:pointer;
+    box-shadow:0 4px 14px var(--shadow);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .12s; color:var(--text); }
+  .icon-btn:active { transform:scale(.92); }
+  .icon-btn.muted { opacity:.55; }
+  .level-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+  .level-badge { display:inline-flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:11px; flex-shrink:0;
+    background:var(--primary); color:#fff; font-size:16px;
+    box-shadow:0 4px 10px rgba(91,141,239,.3); transition:transform .3s; }
+  .level-badge.speed { background:linear-gradient(135deg,#ff9f43,#ff6b6b); }
+  .level-badge.sprint { background:linear-gradient(135deg,#a66bff,#ff6bd6); }
+  .level-badge.bump { animation:bump .5s; }
+  @keyframes bump { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3) rotate(-8deg)} }
+  .level-name { color:var(--text-dim); font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
+  .score { font-size:17px; color:var(--primary); font-weight:800; }
+  .streak { font-size:13px; font-weight:900; color:#ff6b6b; display:none; }
+  .streak.show { display:block; animation:streakPop .4s; }
+  @keyframes streakPop { 0%{transform:scale(.4)} 60%{transform:scale(1.4)} 100%{transform:scale(1)} }
+
+  .rank-card, .pet-card { margin:0 20px 12px; padding:14px 18px;
+    background:linear-gradient(135deg,#fff9e6,#fff); border-radius:22px;
+    box-shadow:0 6px 20px rgba(255,201,60,.25); border:1px solid rgba(255,201,60,.35);
+    display:flex; flex-direction:column; gap:10px; }
+  body.dark .rank-card, body.dark .pet-card {
+    background:linear-gradient(135deg,#2a2415,#232a3d);
+    border-color:rgba(255,201,60,.3); box-shadow:0 6px 20px rgba(0,0,0,.3); }
+  .pet-card { background:linear-gradient(135deg,#eaf4ff,#fff);
+    box-shadow:0 6px 20px rgba(91,141,239,.2); border-color:rgba(91,141,239,.3);
+    flex-direction:row; align-items:center; gap:14px; }
+  body.dark .pet-card { background:linear-gradient(135deg,#1d2438,#232a3d); }
+  .pet-emoji { font-size:48px; line-height:1;
+    animation:petBob 2.4s ease-in-out infinite; }
+  @keyframes petBob { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-4px) rotate(3deg)} }
+  .pet-info { flex:1; min-width:0; }
+  .pet-name { font-size:16px; font-weight:900; color:var(--primary); }
+  .pet-next { font-size:12px; color:var(--text-dim); margin-top:2px; font-weight:700; }
+  .pet-bar { height:8px; background:rgba(91,141,239,.15); border-radius:4px; overflow:hidden; margin-top:6px; }
+  .pet-bar-fill { height:100%; background:linear-gradient(90deg,#7ba6ff,#5b8def); border-radius:4px; transition:width .5s; }
+  .rank-top { display:flex; align-items:center; gap:12px; }
+  .rank-emoji { font-size:34px; line-height:1; filter: drop-shadow(0 3px 6px rgba(255,180,0,.4)); }
+  .rank-info { flex:1; min-width:0; }
+  .rank-name { font-size:18px; font-weight:900; color:#7a5b00; line-height:1.1; }
+  body.dark .rank-name { color:#ffd93d; }
+  .rank-points { font-size:13px; color:#a07d00; margin-top:2px; font-weight:700; }
+  body.dark .rank-points { color:#d4b34a; }
+  .rank-progress-bar { height:10px; background:#fff2c4; border-radius:5px; overflow:hidden; }
+  body.dark .rank-progress-bar { background:rgba(255,201,60,.2); }
+  .rank-progress-fill { height:100%; background:linear-gradient(90deg,#ffc93c,#ff9f43); border-radius:5px; transition:width .5s ease; }
+  .rank-next-label { font-size:13px; color:#a07d00; font-weight:700; display:flex; justify-content:space-between; }
+  body.dark .rank-next-label { color:#d4b34a; }
+
+  .lucky-row { padding:0 20px 8px; display:flex; flex-direction:column; gap:8px; }
+  .lucky-btn { width:100%; padding:14px; border-radius:18px; font-family:inherit;
+    background:linear-gradient(135deg,#a66bff,#ff6bd6); color:#fff;
+    border:none; font-size:17px; font-weight:900; cursor:pointer;
+    box-shadow:0 8px 20px rgba(166,107,255,.35); transition:transform .12s; }
+  .lucky-btn:active { transform:scale(.97); }
+  .sprint-btn { width:100%; padding:14px; border-radius:18px; font-family:inherit;
+    background:linear-gradient(135deg,#ff9f43,#ff6b6b); color:#fff;
+    border:none; font-size:17px; font-weight:900; cursor:pointer;
+    box-shadow:0 8px 20px rgba(255,107,107,.4); transition:transform .12s;
+    display:flex; justify-content:center; align-items:center; gap:10px; }
+  .sprint-btn:active { transform:scale(.97); }
+  .sprint-best { background:rgba(255,255,255,.25); padding:2px 10px; border-radius:999px; font-size:13px; }
+
+  .menu-subtitle { padding:8px 20px 12px; color:var(--text-dim); font-size:15px; font-weight:600; }
+  .levels-grid { flex:1; overflow-y:auto; padding:4px 20px 24px;
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:14px; align-content:start; }
+  .level-card { background:var(--card); border:none; font-family:inherit;
+    border-radius:24px; padding:18px 14px; box-shadow:0 6px 20px var(--shadow);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    cursor:pointer; transition:transform .12s; text-align:center; color:var(--text); }
+  .level-card:active { transform:scale(.97); }
+  .level-card.speed { box-shadow:0 6px 20px rgba(255,159,67,.22); }
+  body.dark .level-card.speed { background:linear-gradient(135deg,#2a1f15,#232a3d); }
+  .level-card.locked { background:#eef1f8; cursor:default; }
+  body.dark .level-card.locked { background:#1c2233; }
+  .level-card.locked:active { transform:none; }
+  .level-card-num { width:54px; height:54px; border-radius:16px;
+    background:linear-gradient(135deg,#5b8def,#7ba6ff); color:#fff; font-size:30px; font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 14px rgba(91,141,239,.35); }
+  .level-card.speed .level-card-num { background:linear-gradient(135deg,#ff9f43,#ff6b6b); }
+  .level-card.locked .level-card-num { background:#c8cfdd; box-shadow:none; font-size:26px; }
+  body.dark .level-card.locked .level-card-num { background:#2b3346; }
+  .level-card-name { font-size:14px; font-weight:700; line-height:1.2; }
+  .level-card.locked .level-card-name { color:#a0a8bc; }
+  .level-card-stars { font-size:20px; letter-spacing:3px; color:var(--gold); text-shadow:0 2px 4px rgba(255,201,60,.4); }
+  .level-card.locked .level-card-stars { display:none; }
+
+  .stars-row { display:grid; grid-template-columns:repeat(10, 1fr); gap:6px; padding:6px 20px 14px; }
+  .star-slot { aspect-ratio:1; max-height:32px; border-radius:50%; background:#e0e5f5;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; color:#b8bed0;
+    transition:transform .25s, background .25s, color .25s; }
+  body.dark .star-slot { background:#2a3143; color:#5a6478; }
+  .star-slot.correct { background:var(--green); color:#fff; transform:scale(1.15); animation:starPop .4s; }
+  .star-slot.wrong { background:var(--red); color:#fff; transform:scale(1.1); animation:starPop .4s; }
+  @keyframes starPop { 0%{transform:scale(.4)} 60%{transform:scale(1.4)} 100%{transform:scale(1.15)} }
+  .timer-bar { height:10px; margin:0 20px 10px; background:#e0e5f5; border-radius:5px; overflow:hidden; }
+  .timer-bar.hidden { display:none; }
+  body.dark .timer-bar { background:#2a3143; }
+  .timer-fill { height:100%; width:100%; background:var(--green); border-radius:5px;
+    transition:width .1s linear, background .3s; }
+  .timer-fill.warn { background:var(--gold); }
+  .timer-fill.danger { background:var(--red); }
+  main { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;
+    padding:20px; gap:clamp(20px,4vh,50px); }
+  .problem-card { background:var(--card); border-radius:30px;
+    padding:clamp(20px,4vh,44px) clamp(30px,7vw,70px); box-shadow:0 12px 40px var(--shadow); }
+  .problem { font-size:clamp(48px,11vw,100px); font-weight:800; letter-spacing:2px;
+    color:var(--text); white-space:nowrap; }
+  .answers { display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(12px,2vw,22px); width:100%; max-width:720px; }
+  .answer-btn { height:clamp(90px,18vh,170px); border:none; background:var(--card); border-radius:24px;
+    font-family:inherit; font-weight:800; font-size:clamp(30px,6vw,52px);
+    color:var(--primary); cursor:pointer; box-shadow:0 6px 20px var(--shadow);
+    transition:transform .12s, background .2s, color .2s;
+    display:flex; align-items:center; justify-content:center; }
+  .answer-btn:active { transform:scale(.96); }
+  .answer-btn.correct { background:var(--green); color:#fff; animation:pop .4s; }
+  .answer-btn.wrong { background:var(--red); color:#fff; animation:shake .4s; }
+  .answer-btn:disabled { pointer-events:none; }
+  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+  .toast { position:fixed; left:50%; bottom:40px;
+    transform:translateX(-50%) translateY(20px) scale(.9);
+    background:var(--green); color:#fff; padding:14px 30px; border-radius:999px;
+    font-size:24px; font-weight:800; opacity:0; pointer-events:none; z-index:100;
+    box-shadow:0 10px 28px rgba(78,203,113,.4);
+    transition:opacity .25s, transform .25s; white-space:nowrap; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+  .toast.warn { background:var(--red); }
+
+  .overlay { position:fixed; inset:0; background:rgba(42,47,69,.6); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; z-index:200; padding:20px; }
+  .overlay.show { display:flex; }
+  .overlay-card { background:var(--card); border-radius:32px; padding:28px 32px 32px; text-align:center;
+    max-width:460px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation:cardIn .55s cubic-bezier(.2,1.4,.5,1); position:relative; z-index:210;
+    max-height:92vh; overflow-y:auto; }
+  @keyframes cardIn { 0%{transform:scale(.5) rotate(-10deg); opacity:0;} 100%{transform:scale(1) rotate(0); opacity:1;} }
+  .overlay-emoji { font-size:66px; line-height:1; animation:wiggle .8s ease-in-out infinite; }
+  @keyframes wiggle { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
+  .grade-label { font-size:14px; font-weight:900; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-top:12px; }
+  .grade { font-size:110px; font-weight:900; line-height:1; margin-top:2px;
+    background:linear-gradient(135deg,#5b8def,#ff9f43,#ffd93d);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:gradeIn .6s cubic-bezier(.2,1.6,.5,1) .1s backwards; }
+  @keyframes gradeIn { 0%{transform:scale(0) rotate(-30deg); opacity:0} 100%{transform:scale(1) rotate(0); opacity:1} }
+  .grade-text { font-size:24px; font-weight:900; margin-top:6px; }
+  .stats { color:var(--text-dim); margin-top:8px; font-size:17px; }
+  .rankup-banner { display:none; margin-top:14px;
+    background:linear-gradient(135deg,#fff9e6,#fff5d6);
+    border:2px solid #ffc93c; border-radius:16px;
+    padding:12px 16px; font-size:15px; font-weight:800; color:#7a5b00;
+    animation:ribbonIn .6s; }
+  body.dark .rankup-banner { background:linear-gradient(135deg,#2a2415,#2a2415); color:#ffd93d; }
+  .rankup-banner.show { display:block; }
+  .btn { margin-top:22px; width:100%; background:var(--primary); color:#fff;
+    border:none; padding:18px; border-radius:18px; font-family:inherit;
+    font-size:20px; font-weight:800; cursor:pointer;
+    transition:transform .12s; box-shadow:0 8px 20px rgba(91,141,239,.4); }
+  .btn:active { transform:scale(.97); }
+  .btn.next { background:var(--green); box-shadow:0 8px 24px rgba(78,203,113,.5); }
+  .btn-menu-link { margin-top:10px; width:100%; background:transparent; color:var(--text-dim);
+    border:none; padding:12px; font-family:inherit; font-size:15px; font-weight:700;
+    cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  #fxCanvas { position:fixed; inset:0; pointer-events:none; z-index:150; }
+  #fxCanvas.front { z-index:250; }
+  .perfect-ribbon { position:absolute; top:-18px; right:-18px;
+    background:var(--gold); color:#7a5b00; font-weight:900; font-size:14px;
+    padding:8px 14px; border-radius:999px; transform:rotate(12deg);
+    box-shadow:0 6px 20px rgba(255,201,60,.6); animation:ribbonIn .6s .3s backwards; }
+  @keyframes ribbonIn { 0%{transform:rotate(12deg) scale(0)} 100%{transform:rotate(12deg) scale(1)} }
+
+  .parents-content, .achiev-content { flex:1; overflow-y:auto; padding:4px 20px 28px;
+    display:flex; flex-direction:column; gap:16px; }
+  .stat-card { background:var(--card); border-radius:22px; padding:20px;
+    box-shadow:0 6px 20px var(--shadow); }
+  .stat-card-title { font-size:14px; font-weight:800; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+  .stat-big { font-size:44px; font-weight:900; color:var(--primary); line-height:1; margin-bottom:6px; }
+  .stat-sub { font-size:15px; color:var(--text-dim); }
+  .stat-rows { display:flex; flex-direction:column; gap:10px; }
+  .stat-row { display:flex; justify-content:space-between; font-size:16px; padding:6px 0;
+    border-bottom:1px solid rgba(138,144,168,.15); }
+  .stat-row:last-child { border-bottom:none; }
+  .stat-row b { font-weight:800; }
+  .parents-level { display:grid; grid-template-columns: 1fr auto; gap:10px; padding:12px 0;
+    border-bottom:1px solid rgba(138,144,168,.15); align-items:center; }
+  .parents-level:last-child { border-bottom:none; }
+  .pl-name { font-weight:700; font-size:15px; }
+  .pl-stars { color:var(--gold); font-size:16px; letter-spacing:2px; margin-top:3px; }
+  .pl-nums { font-size:14px; color:var(--text-dim); text-align:right; line-height:1.4; }
+  .pl-nums b { color:var(--text); font-size:16px; }
+  .mistake-item { display:flex; justify-content:space-between; align-items:center;
+    padding:12px 14px; background:rgba(255,107,107,.08); border-radius:14px;
+    margin-bottom:8px; border-left:4px solid var(--red); }
+  .mistake-item:last-child { margin-bottom:0; }
+  .mistake-left { display:flex; flex-direction:column; gap:2px; }
+  .mistake-q { font-size:17px; font-weight:800; }
+  .mistake-time { font-size:12px; color:var(--text-dim); }
+  .mistake-answers { font-size:14px; text-align:right; line-height:1.4; }
+  .mistake-given { color:var(--red); font-weight:800; }
+  .mistake-correct { color:var(--green); font-weight:800; }
+  .empty-note { color:var(--text-dim); font-size:15px; text-align:center; padding:16px; }
+  .reset-btn { background:rgba(255,107,107,.1); color:var(--red); border:2px solid rgba(255,107,107,.3);
+    font-family:inherit; padding:16px; border-radius:18px;
+    font-size:16px; font-weight:800; cursor:pointer; margin-top:6px; }
+  .reset-btn:active { transform:scale(.97); }
+
+  .daily-chart { display:flex; gap:6px; align-items:flex-end; justify-content:space-between; padding-top:4px; }
+  .daily-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
+  .daily-count { font-size:11px; font-weight:900; color:var(--text-dim); height:14px; line-height:14px; }
+  .daily-bar { width:100%; height:90px; background:rgba(138,144,168,.15); border-radius:8px;
+    display:flex; align-items:flex-end; overflow:hidden; }
+  .daily-bar-fill { width:100%; background:linear-gradient(180deg,#5b8def,#7ba6ff);
+    border-radius:8px; min-height:3px; transition:height .4s ease; }
+  .daily-bar-fill.today { background:linear-gradient(180deg,#ff9f43,#ffc93c); }
+  .daily-label { font-size:11px; font-weight:700; color:var(--text-dim); }
+  .daily-label.today { color:var(--primary); font-weight:900; }
+
+  .achiev-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:12px; }
+  .achiev-card { background:var(--card); border-radius:20px; padding:16px 10px; text-align:center;
+    box-shadow:0 6px 20px var(--shadow); display:flex; flex-direction:column; align-items:center; gap:6px;
+    opacity:.45; filter:grayscale(1); transition:opacity .3s, filter .3s; }
+  .achiev-card.unlocked { opacity:1; filter:none;
+    background:linear-gradient(135deg,#fff9e6,var(--card)); }
+  body.dark .achiev-card.unlocked { background:linear-gradient(135deg,#2a2415,var(--card)); }
+  .achiev-emoji { font-size:38px; line-height:1; }
+  .achiev-name { font-size:14px; font-weight:900; line-height:1.15; }
+  .achiev-desc { font-size:11px; color:var(--text-dim); line-height:1.2; }
+
+  .sprint-info { display:flex; justify-content:center; align-items:center; gap:24px;
+    padding:10px 20px; }
+  .sprint-stat { text-align:center; }
+  .sprint-stat-num { font-size:34px; font-weight:900; color:var(--primary); line-height:1; }
+  .sprint-stat-label { font-size:11px; color:var(--text-dim); font-weight:800;
+    text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="screen-menu" class="screen">
+    <header>
+      <div class="title">Считалочка</div>
+      <div class="header-actions">
+        <button id="muteBtn" class="icon-btn" title="Звук">🔊</button>
+        <button id="achievBtn" class="icon-btn" title="Достижения">🏆</button>
+        <button id="parentsBtn" class="icon-btn" title="Родителям">👨‍👩‍👧</button>
+      </div>
+    </header>
+    <div class="rank-card" id="rankCard"></div>
+    <div class="pet-card" id="petCard"></div>
+    <div class="lucky-row">
+      <button class="sprint-btn" id="sprintBtn">
+        <span>⚡ Спринт — 60 секунд!</span>
+        <span class="sprint-best" id="sprintBestBadge" style="display:none;"></span>
+      </button>
+      <button class="lucky-btn" id="luckyBtn">🎲 Мне повезёт — случайный уровень</button>
+    </div>
+    <div class="menu-subtitle">Выбери уровень</div>
+    <div class="levels-grid" id="levelsGrid"></div>
+  </section>
+
+  <section id="screen-game" class="screen">
+    <header>
+      <button id="gameBackBtn" class="icon-btn">←</button>
+      <div class="level-info">
+        <span class="level-badge" id="levelBadge">1</span>
+        <span class="level-name" id="levelName">Сложение до 10</span>
+      </div>
+      <div class="header-right">
+        <div class="score" id="score">⭐ 0</div>
+        <div class="streak" id="streak">🔥 0</div>
+      </div>
+    </header>
+    <div class="stars-row" id="starsRow"></div>
+    <div class="timer-bar hidden" id="timerBar"><div class="timer-fill" id="timerFill"></div></div>
+    <main>
+      <div class="problem-card"><div class="problem" id="problemText">5 + 7</div></div>
+      <div class="answers" id="answers"></div>
+    </main>
+  </section>
+
+  <section id="screen-parents" class="screen">
+    <header>
+      <button id="parentsBackBtn" class="icon-btn">←</button>
+      <div class="title" style="flex:1;text-align:center;">Родителям</div>
+      <div style="width:44px"></div>
+    </header>
+    <div class="parents-content" id="parentsContent"></div>
+  </section>
+
+  <section id="screen-achiev" class="screen">
+    <header>
+      <button id="achievBackBtn" class="icon-btn">←</button>
+      <div class="title" style="flex:1;text-align:center;">Достижения</div>
+      <div style="width:44px"></div>
+    </header>
+    <div class="achiev-content">
+      <div class="stat-card">
+        <div class="stat-card-title">Собрано значков</div>
+        <div class="stat-big" id="achievCount">0 / 17</div>
+        <div class="stat-sub">Решай примеры и открывай всё новые</div>
+      </div>
+      <div class="achiev-grid" id="achievGrid"></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="fxCanvas"></canvas>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card" id="overlayCard">
+    <div id="ribbonHolder"></div>
+    <div class="overlay-emoji" id="overlayEmoji">🎉</div>
+    <div class="grade-label">Твоя оценка</div>
+    <div class="grade" id="gradeEmoji">5</div>
+    <div class="grade-text" id="gradeText">Отлично!</div>
+    <div class="stats" id="statsText">10 из 10</div>
+    <div class="rankup-banner" id="rankUpBanner"></div>
+    <button class="btn" id="continueBtn">Продолжить</button>
+    <button class="btn-menu-link" id="menuFromOverlayBtn">В меню</button>
+  </div>
+</div>
+
+<div class="overlay" id="sprintOverlay">
+  <div class="overlay-card">
+    <div class="overlay-emoji" id="sprintEmoji">⏱</div>
+    <div class="grade-label">Время вышло!</div>
+    <div class="grade" id="sprintScore">0</div>
+    <div class="grade-text" id="sprintTitle">Хорошая попытка!</div>
+    <div class="stats" id="sprintStats"></div>
+    <div class="rankup-banner" id="sprintRecord" style="display:none;"></div>
+    <button class="btn next" id="sprintAgainBtn">Ещё раз!</button>
+    <button class="btn-menu-link" id="sprintMenuBtn">В меню</button>
+  </div>
+</div>
+
+<div class="overlay" id="dailyOverlay">
+  <div class="overlay-card">
+    <div class="overlay-emoji" id="dailyEmoji">🎁</div>
+    <div class="grade-text" id="dailyTitle" style="font-size:26px;margin-top:16px;">Ты зашла сегодня!</div>
+    <div class="stats" id="dailyText" style="font-size:18px;margin-top:10px;">Вот тебе +10 ⭐</div>
+    <div class="rankup-banner show" id="dailyStreak" style="display:none;"></div>
+    <button class="btn next" id="dailyClaimBtn">Забрать!</button>
+  </div>
+</div>
+
+<div class="overlay" id="newAchievOverlay">
+  <div class="overlay-card">
+    <div class="overlay-emoji">🏆</div>
+    <div class="grade-label">Новое достижение!</div>
+    <div class="achiev-emoji" id="newAchievEmoji" style="font-size:70px;margin-top:14px;">🎈</div>
+    <div class="grade-text" id="newAchievName" style="font-size:24px;">Первый шаг</div>
+    <div class="stats" id="newAchievDesc" style="font-size:15px;">Решить первый пример</div>
+    <button class="btn" id="newAchievCloseBtn">Ура!</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const shuffle = arr => {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+const plural = (n, one, few, many) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+  return many;
+};
+const padArray = (arr, len, def) => {
+  const out = Array.isArray(arr) ? arr.slice(0, len) : [];
+  while (out.length < len) out.push(def);
+  return out;
+};
+const todayKey = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return todayKey(d); };
+
+/* ===== Тёмная тема по времени ===== */
+(function() {
+  const h = new Date().getHours();
+  if (h >= 20 || h < 7) document.body.classList.add('dark');
+})();
+
+/* ===== Вибрация ===== */
+function vib(pattern) {
+  if (!muted && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+}
+
+/* ===== Звук ===== */
+let audioCtx = null;
+let muted = false;
+const MUTE_KEY = 'schetalo4ka_muted';
+
+function ensureAudio() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function beep(freq, dur, type = 'sine', when = 0, vol = 0.18) {
+  if (muted || !audioCtx) return;
+  const t = audioCtx.currentTime + when;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t); osc.stop(t + dur + 0.05);
+}
+const SOUND_GROUPS = [
+  { max: 4,  correct: [[880,0.10,'sine',0,0.15],[1320,0.16,'sine',0.07,0.13]],
+              wrong:   [[320,0.12,'triangle',0,0.15],[220,0.22,'triangle',0.10,0.15]] },
+  { max: 7,  correct: [[784,0.10,'sine',0,0.16],[1175,0.16,'sine',0.07,0.14]],
+              wrong:   [[290,0.12,'triangle',0,0.15],[200,0.22,'triangle',0.10,0.15]] },
+  { max: 11, correct: [[659,0.10,'triangle',0,0.16],[988,0.16,'triangle',0.07,0.14]],
+              wrong:   [[260,0.13,'sawtooth',0,0.11],[190,0.22,'sawtooth',0.10,0.11]] },
+  { max: 15, correct: [[523,0.12,'triangle',0,0.16],[784,0.18,'triangle',0.08,0.14]],
+              wrong:   [[230,0.14,'sawtooth',0,0.11],[170,0.24,'sawtooth',0.12,0.11]] },
+  { max: 17, correct: [[1046,0.06,'square',0,0.11],[1568,0.06,'square',0.06,0.11],[2093,0.14,'square',0.12,0.11]],
+              wrong:   [[440,0.10,'square',0,0.12],[330,0.20,'square',0.10,0.12]] },
+  { max: 99, correct: [[1200,0.06,'square',0,0.13],[1600,0.06,'square',0.06,0.13],[2000,0.06,'square',0.12,0.13]],
+              wrong:   [[400,0.10,'sawtooth',0,0.14],[300,0.18,'sawtooth',0.10,0.14]] },
+];
+function sndCorrectLvl(lvl) {
+  const g = SOUND_GROUPS.find(x => lvl <= x.max) || SOUND_GROUPS[0];
+  g.correct.forEach(([f,d,t,w,v]) => beep(f, d, t, w, v));
+}
+function sndWrongLvl(lvl) {
+  const g = SOUND_GROUPS.find(x => lvl <= x.max) || SOUND_GROUPS[0];
+  g.wrong.forEach(([f,d,t,w,v]) => beep(f, d, t, w, v));
+}
+function sndSprintCorrect() { beep(1046, 0.06, 'square', 0, 0.14); beep(1568, 0.10, 'square', 0.05, 0.12); }
+function sndSprintWrong() { beep(260, 0.10, 'sawtooth', 0, 0.14); beep(180, 0.16, 'sawtooth', 0.08, 0.14); }
+function sndTick() { beep(1200, 0.04, 'sine', 0, 0.08); }
+function sndFanfare() {
+  ensureAudio();
+  [[523.25,0,0.16],[659.25,0.14,0.16],[783.99,0.28,0.16],[1046.5,0.42,0.60]]
+    .forEach(([f,w,d]) => beep(f, d, 'triangle', w, 0.22));
+  beep(659.25, 0.60, 'sine', 0.42, 0.10);
+  beep(783.99, 0.60, 'sine', 0.42, 0.08);
+}
+function sndFanfarePerfect() {
+  ensureAudio();
+  [[523.25,0,0.13],[523.25,0.13,0.13],[523.25,0.26,0.13],[659.25,0.40,0.18],[783.99,0.60,0.18],[1046.5,0.80,0.70]]
+    .forEach(([f,w,d]) => beep(f, d, 'triangle', w, 0.22));
+  beep(659.25, 0.70, 'sine', 0.80, 0.11);
+  beep(783.99, 0.70, 'sine', 0.80, 0.09);
+}
+function sndLevelUp() { ensureAudio(); [440,554,659,880,1109,1318].forEach((f,i) => beep(f, 0.10, 'square', i*0.07, 0.13)); }
+function sndRankUp() {
+  ensureAudio();
+  [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => beep(f, 0.14, 'triangle', i * 0.1, 0.22));
+  beep(1046.5, 0.7, 'sine', 0.5, 0.12);
+  beep(1318.5, 0.7, 'sine', 0.5, 0.10);
+}
+function sndStreak() {
+  ensureAudio();
+  [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => beep(f, 0.1, 'triangle', i * 0.06, 0.2));
+}
+function sndAchiev() {
+  ensureAudio();
+  [523.25, 783.99, 1046.5, 1318.5, 1568].forEach((f, i) => beep(f, 0.12, 'triangle', i * 0.08, 0.22));
+}
+
+/* ===== Конфетти ===== */
+const fxCanvas = $('fxCanvas'), fxCtx = fxCanvas.getContext('2d');
+let fxParticles = [], fxRunning = false;
+let fxResize = () => {
+  fxCanvas.width = window.innerWidth * devicePixelRatio;
+  fxCanvas.height = window.innerHeight * devicePixelRatio;
+  fxCanvas.style.width = window.innerWidth + 'px';
+  fxCanvas.style.height = window.innerHeight + 'px';
+  fxCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+};
+window.addEventListener('resize', fxResize);
+fxResize();
+const FX_COLORS = ['#ff6b6b','#4ecb71','#5b8def','#ffd93d','#ff9f43','#a66bff','#ff6bd6','#5bd6ff'];
+function fxSpawn(x, y, count, opts = {}) {
+  const spread = opts.spread ?? 4;
+  const sizeMin = opts.sizeMin ?? 6, sizeMax = opts.sizeMax ?? 10;
+  const upBias = opts.upBias ?? 0;
+  for (let i = 0; i < count; i++) {
+    const angle = opts.angle !== undefined ? opts.angle + (Math.random() - 0.5) * spread : Math.random() * Math.PI * 2;
+    const speed = opts.speed ?? (2 + Math.random() * 5);
+    fxParticles.push({
+      x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - upBias,
+      gravity: opts.gravity ?? 0.15,
+      size: sizeMin + Math.random() * (sizeMax - sizeMin),
+      color: FX_COLORS[Math.floor(Math.random() * FX_COLORS.length)],
+      rotation: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 0.3,
+      shape: Math.random() < 0.55 ? 'rect' : 'circle',
+      life: 1, decay: opts.decay ?? (0.006 + Math.random() * 0.006),
+    });
+  }
+  if (!fxRunning) { fxRunning = true; requestAnimationFrame(fxTick); }
+}
+function fxTick() {
+  fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  let alive = 0;
+  for (const p of fxParticles) {
+    if (p.life <= 0) continue;
+    p.vy += p.gravity; p.vx *= 0.995;
+    p.x += p.vx; p.y += p.vy; p.rotation += p.rotSpeed; p.life -= p.decay;
+    if (p.life <= 0) continue;
+    alive++;
+    fxCtx.save();
+    fxCtx.globalAlpha = Math.min(1, p.life * 1.4);
+    fxCtx.translate(p.x, p.y); fxCtx.rotate(p.rotation);
+    fxCtx.fillStyle = p.color;
+    if (p.shape === 'rect') fxCtx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+    else { fxCtx.beginPath(); fxCtx.arc(0, 0, p.size/2, 0, Math.PI*2); fxCtx.fill(); }
+    fxCtx.restore();
+  }
+  fxParticles = fxParticles.filter(p => p.life > 0);
+  if (alive > 0) requestAnimationFrame(fxTick);
+  else { fxRunning = false; fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height); }
+}
+function burstSmall(x, y) { fxSpawn(x, y, 22, { speed: 4, sizeMin: 5, sizeMax: 9, upBias: 1, gravity: 0.18 }); }
+function burstBig(intensity = 1) {
+  const W = window.innerWidth, H = window.innerHeight;
+  const shots = Math.round(4 * intensity);
+  for (let i = 0; i < shots; i++) setTimeout(() => {
+    fxSpawn(W * (0.15 + Math.random() * 0.7), H * (0.15 + Math.random() * 0.45), 60,
+      { speed: 8, sizeMin: 6, sizeMax: 12, gravity: 0.12, decay: 0.010 });
+  }, i * 180);
+  setTimeout(() => {
+    for (let i = 0; i < 5; i++) setTimeout(() => {
+      fxSpawn(W * (0.1 + i * 0.2), H + 10, 35,
+        { speed: 11, upBias: 6, sizeMin: 6, sizeMax: 11, gravity: 0.16 });
+    }, i * 60);
+  }, shots * 180 + 100);
+}
+
+/* ===== Генераторы ===== */
+function genAdd10() { const a = rand(2, 8); const b = rand(1, 10 - a); return { a, b, op: '+', answer: a + b }; }
+function genAdd20NoCarry() {
+  let a, b;
+  while (true) { a = rand(2, 15); b = rand(2, 15);
+    const s = a + b;
+    if (s < 11 || s > 20) continue;
+    if ((a % 10) + (b % 10) >= 10) continue;
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function genAdd20Carry() {
+  let a, b;
+  while (true) { a = rand(2, 9); b = rand(2, 9);
+    const s = a + b;
+    if (s < 11 || s > 18) continue;
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function genSub10() { const a = rand(3, 10); const b = rand(1, a - 1); return { a, b, op: '−', answer: a - b }; }
+function genSub20() {
+  let a, b;
+  while (true) { a = rand(11, 20); b = rand(2, 9);
+    if (a - b < 1 || a - b > 15) continue;
+    break; }
+  return { a, b, op: '−', answer: a - b };
+}
+function genTwoPlusOneNoCarry() {
+  let a, b;
+  while (true) { a = rand(11, 89);
+    const onesA = a % 10;
+    if (onesA > 7) continue;
+    b = rand(1, 9 - onesA);
+    if (b < 1) continue;
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function genTwoPlusOneCarry() {
+  let a, b;
+  while (true) { a = rand(11, 89);
+    const onesA = a % 10;
+    if (onesA < 2) continue;
+    const minB = 10 - onesA;
+    if (minB > 9) continue;
+    b = rand(minB, 9);
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function genTwoMinusOne() {
+  let a, b;
+  while (true) { a = rand(21, 99); b = rand(2, 9);
+    if (a - b < 10) continue;
+    break; }
+  return { a, b, op: '−', answer: a - b };
+}
+function genRoundTensAdd() {
+  const tens = [10,20,30,40,50,60,70,80];
+  let a, b;
+  while (true) { a = tens[rand(0, tens.length - 1)]; b = tens[rand(0, tens.length - 1)];
+    if (a + b > 100) continue;
+    if (a + b < 30) continue;
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function genRoundTensSub() {
+  const tens = [30,40,50,60,70,80,90];
+  let a, b;
+  while (true) { a = tens[rand(0, tens.length - 1)]; b = tens[rand(0, tens.length - 1)];
+    if (b >= a) continue;
+    if (a - b < 10) continue;
+    break; }
+  return { a, b, op: '−', answer: a - b };
+}
+function gen100AddNoCarry() {
+  let a, b;
+  while (true) { a = rand(11, 84); b = rand(11, 84);
+    if (a + b > 100) continue;
+    const oa = a % 10, ob = b % 10;
+    if (oa + ob >= 10) continue;
+    if (oa < 2 || ob < 2) continue;
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function gen100AddCarry() {
+  let a, b;
+  while (true) { a = rand(13, 79); b = rand(13, 79);
+    if (a + b > 100) continue;
+    const oa = a % 10, ob = b % 10;
+    if (oa + ob < 10) continue;
+    if (oa < 3 || ob < 3) continue;
+    break; }
+  return { a, b, op: '+', answer: a + b };
+}
+function gen100Sub() {
+  let a, b;
+  while (true) { a = rand(30, 99); b = rand(11, a - 5);
+    if (b >= a) continue;
+    if (a - b < 5) continue;
+    break; }
+  return { a, b, op: '−', answer: a - b };
+}
+function weightedPick(pairs) {
+  const total = pairs.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total;
+  for (const [gen, w] of pairs) { if (r < w) return gen(); r -= w; }
+  return pairs[0][0]();
+}
+const EASY_POOL = [genAdd10, genAdd20NoCarry, genAdd20Carry, genSub10, genSub20];
+function genMix10() { return weightedPick([[genAdd10, 1], [genSub10, 1]]); }
+function genMix20() { return weightedPick([[genAdd20NoCarry, 1], [genAdd20Carry, 1], [genSub20, 1]]); }
+function withEasyRest(hardGen, easyChance = 0.3) {
+  return () => (Math.random() < easyChance) ? EASY_POOL[rand(0, EASY_POOL.length - 1)]() : hardGen();
+}
+function genBigMix() {
+  return weightedPick([
+    [genAdd10, 10], [genAdd20Carry, 10], [genSub10, 8], [genSub20, 8],
+    [genTwoPlusOneNoCarry, 12], [genTwoPlusOneCarry, 12], [genTwoMinusOne, 10],
+    [genRoundTensAdd, 8], [gen100AddNoCarry, 10], [gen100AddCarry, 8], [gen100Sub, 4],
+  ]);
+}
+
+const LEVELS = [
+  { name: 'Сложение до 10',      emoji: '🐣', gen: genAdd10,                              timeLimit: null },
+  { name: 'Сложение до 20',      emoji: '🐥', gen: genAdd20NoCarry,                       timeLimit: null },
+  { name: 'Сложение через 10',   emoji: '🐤', gen: genAdd20Carry,                         timeLimit: null },
+  { name: 'Вычитание до 10',     emoji: '🐰', gen: genSub10,                              timeLimit: null },
+  { name: 'Вычитание до 20',     emoji: '🐹', gen: genSub20,                              timeLimit: null },
+  { name: 'Микс до 10',          emoji: '🦊', gen: genMix10,                              timeLimit: null },
+  { name: 'Микс до 20',          emoji: '🦝', gen: genMix20,                              timeLimit: null },
+  { name: '37 + 2',              emoji: '🐻', gen: genTwoPlusOneNoCarry,                  timeLimit: null },
+  { name: '37 + 5 (переход)',    emoji: '🐼', gen: withEasyRest(genTwoPlusOneCarry, 0.25), timeLimit: null },
+  { name: '37 − 4',              emoji: '🐨', gen: genTwoMinusOne,                        timeLimit: null },
+  { name: '20 + 30',             emoji: '🦁', gen: genRoundTensAdd,                       timeLimit: null },
+  { name: '80 − 30',             emoji: '🐯', gen: genRoundTensSub,                       timeLimit: null },
+  { name: 'До 100 без перехода', emoji: '🐲', gen: withEasyRest(gen100AddNoCarry, 0.30),  timeLimit: null },
+  { name: 'До 100 с переходом',  emoji: '🦖', gen: withEasyRest(gen100AddCarry, 0.30),    timeLimit: null },
+  { name: 'До 100 вычитание',    emoji: '🦕', gen: withEasyRest(gen100Sub, 0.30),         timeLimit: null },
+  { name: 'Всё вместе',          emoji: '🚀', gen: withEasyRest(genBigMix, 0.25),         timeLimit: null },
+  { name: 'Большой микс',        emoji: '🛸', gen: genBigMix,                             timeLimit: null },
+  { name: 'Скорость',            emoji: '⚡', gen: genMix10,                              timeLimit: 5 },
+  { name: 'Скорость+',           emoji: '🌟', gen: genMix20,                              timeLimit: 6 },
+];
+
+const ROUND_SIZE = 10;
+const PASS = 8;
+const SPRINT_DURATION = 60;             /* секунд */
+const SPRINT_POINTS = 5;                /* очков за правильный в спринте */
+const STORAGE_KEY = 'schetalo4ka_v2';
+const OLD_STORAGE_KEY = 'schetalo4ka';
+const DAILY_BONUS = 10;
+
+const RANKS = [
+  { min: 0,     name: 'Первые шаги',          emoji: '🐣' },
+  { min: 100,   name: 'Умница',               emoji: '🌸' },
+  { min: 300,   name: 'Молодчина',            emoji: '✨' },
+  { min: 600,   name: 'Гений-ребёнок',        emoji: '🧠' },
+  { min: 1000,  name: 'Почти чудо-ребёнок',   emoji: '⭐' },
+  { min: 1600,  name: 'Ты обогнала маму',     emoji: '🚀' },
+  { min: 2500,  name: 'Космический счёт',     emoji: '🌌' },
+  { min: 4000,  name: 'Мастер счёта',         emoji: '🏅' },
+  { min: 6500,  name: 'Гроссмейстер',         emoji: '👑' },
+  { min: 10000, name: 'Вы прошли математику', emoji: '🎓' },
+];
+function getRankInfo(points) {
+  let idx = 0;
+  for (let i = 0; i < RANKS.length; i++) if (points >= RANKS[i].min) idx = i;
+  return { current: RANKS[idx], next: RANKS[idx + 1] || null, idx };
+}
+
+const PET_STAGES = [
+  { min: 0,    emoji: '🥚', name: 'Яйцо' },
+  { min: 150,  emoji: '🐣', name: 'Вылупился!' },
+  { min: 400,  emoji: '🐥', name: 'Птенец' },
+  { min: 900,  emoji: '🐤', name: 'Подрос' },
+  { min: 2000, emoji: '🐲', name: 'Дракончик' },
+  { min: 5000, emoji: '🐉', name: 'Могучий дракон' },
+];
+function getPetInfo(points) {
+  let idx = 0;
+  for (let i = 0; i < PET_STAGES.length; i++) if (points >= PET_STAGES[i].min) idx = i;
+  return { current: PET_STAGES[idx], next: PET_STAGES[idx + 1] || null, idx };
+}
+
+const ACHIEVEMENTS = [
+  { id: 'first',      emoji: '🎈', name: 'Первый шаг',     desc: 'Решить первый пример' },
+  { id: 'streak5',    emoji: '🔥', name: 'Серия 5',        desc: '5 правильных подряд' },
+  { id: 'streak10',   emoji: '⚡', name: 'Серия 10',       desc: '10 правильных подряд' },
+  { id: 'streak20',   emoji: '🌟', name: 'Серия 20',       desc: '20 правильных подряд' },
+  { id: 'perfect',    emoji: '🏆', name: 'Идеально!',      desc: 'Раунд 10 из 10' },
+  { id: 'perfect3',   emoji: '💎', name: 'Перфекционист',  desc: '3 раунда подряд по 10 из 10' },
+  { id: '100',        emoji: '💯', name: 'Сотня',          desc: 'Решить 100 примеров' },
+  { id: '500',        emoji: '🎯', name: 'Пятьсот',        desc: 'Решить 500 примеров' },
+  { id: '1000',       emoji: '🚀', name: 'Тысяча',         desc: 'Решить 1000 примеров' },
+  { id: 'fast2',      emoji: '💨', name: 'Молния',         desc: 'Правильно за 2 секунды' },
+  { id: 'allLevels',  emoji: '🎓', name: 'Все уровни',     desc: 'Открыть все 19 уровней' },
+  { id: 'points1000', emoji: '👑', name: 'Богач',          desc: '1000 очков' },
+  { id: 'points5000', emoji: '🌌', name: 'Космос',         desc: '5000 очков' },
+  { id: 'day3',       emoji: '📅', name: 'День за днём',   desc: 'Заходить 3 дня подряд' },
+  { id: 'day7',       emoji: '🗓️', name: 'Марафонец',      desc: 'Заходить 7 дней подряд' },
+  { id: 'sprint10',   emoji: '🌪️', name: 'Спринтер',       desc: '10 за минуту' },
+  { id: 'sprint20',   emoji: '💥', name: 'Ураган',         desc: '20 за минуту' },
+];
+
+function defaultProgress() {
+  return {
+    unlockedLevel: 0,
+    bestStars: Array(LEVELS.length).fill(0),
+    levelStats: Array.from({ length: LEVELS.length }, () => ({ attempts: 0, correct: 0, rounds: 0 })),
+    totalAttempts: 0, totalCorrect: 0, totalRounds: 0,
+    recentMistakes: [], totalStars: 0,
+    daily: {}, achievements: {},
+    perfectStreak: 0,
+    lastBonusDate: '', bonusStreak: 0,
+    sprintBest: 0, sprintPlays: 0,
+  };
+}
+let progress = defaultProgress();
+
+function saveProgress() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {} }
+
+function loadProgress() {
+  try { muted = localStorage.getItem(MUTE_KEY) === '1'; } catch (e) {}
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  if (!raw) {
+    let oldRaw = null;
+    try { oldRaw = localStorage.getItem(OLD_STORAGE_KEY); } catch (e) {}
+    if (oldRaw) {
+      try {
+        const old = JSON.parse(oldRaw);
+        progress.unlockedLevel = Math.max(0, Math.min(LEVELS.length - 1, (old.level | 0)));
+        progress.totalStars = Math.max(0, (old.score | 0));
+        saveProgress();
+      } catch (e) {}
+    }
+    return;
+  }
+  try {
+    const s = JSON.parse(raw);
+    if (!s || typeof s !== 'object') return;
+    progress.unlockedLevel = Math.max(0, Math.min(LEVELS.length - 1, (s.unlockedLevel | 0)));
+    progress.bestStars = padArray(s.bestStars, LEVELS.length, 0).map(n => Math.max(0, Math.min(3, n | 0)));
+    const stats = Array.isArray(s.levelStats) ? s.levelStats.slice(0, LEVELS.length) : [];
+    while (stats.length < LEVELS.length) stats.push({ attempts: 0, correct: 0, rounds: 0 });
+    progress.levelStats = stats.map(o => ({
+      attempts: ((o || {}).attempts | 0),
+      correct:  ((o || {}).correct  | 0),
+      rounds:   ((o || {}).rounds   | 0),
+    }));
+    progress.totalAttempts = s.totalAttempts | 0;
+    progress.totalCorrect = s.totalCorrect | 0;
+    progress.totalRounds = s.totalRounds | 0;
+    progress.recentMistakes = Array.isArray(s.recentMistakes)
+      ? s.recentMistakes.filter(m => m && typeof m === 'object').slice(0, 20) : [];
+    progress.totalStars = s.totalStars | 0;
+    progress.daily = (s.daily && typeof s.daily === 'object' && !Array.isArray(s.daily)) ? s.daily : {};
+    progress.achievements = (s.achievements && typeof s.achievements === 'object' && !Array.isArray(s.achievements)) ? s.achievements : {};
+    progress.perfectStreak = s.perfectStreak | 0;
+    progress.lastBonusDate = typeof s.lastBonusDate === 'string' ? s.lastBonusDate : '';
+    progress.bonusStreak = s.bonusStreak | 0;
+    progress.sprintBest = s.sprintBest | 0;
+    progress.sprintPlays = s.sprintPlays | 0;
+  } catch (e) { progress = defaultProgress(); }
+}
+
+const state = {
+  level: 0, questionInRound: 0, correctInRound: 0,
+  results: [], current: null, locked: false,
+  dynOffset: 0, dynCorrectStreak: 0, dynWrongStreak: 0,
+  maxStreakThisSession: 0,
+  sprint: false, sprintCorrect: 0, sprintWrong: 0,
+};
+let streak = 0;
+let pendingRankUpIdx = null;
+let lastAnswerTime = 0;
+let pendingAchievQueue = [];
+
+let pendingTimeout = null;
+function clearPendingTimeout() { if (pendingTimeout !== null) { clearTimeout(pendingTimeout); pendingTimeout = null; } }
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = $('screen-' + name);
+  if (el) el.classList.add('active');
+}
+
+/* ===== Достижения ===== */
+function unlockAchievement(id) {
+  if (progress.achievements[id]) return false;
+  progress.achievements[id] = Date.now();
+  saveProgress();
+  pendingAchievQueue.push(id);
+  return true;
+}
+function flushAchievQueue() {
+  if (pendingAchievQueue.length === 0) return;
+  const id = pendingAchievQueue.shift();
+  const a = ACHIEVEMENTS.find(x => x.id === id);
+  if (!a) { flushAchievQueue(); return; }
+  $('newAchievEmoji').textContent = a.emoji;
+  $('newAchievName').textContent = a.name;
+  $('newAchievDesc').textContent = a.desc;
+  $('newAchievOverlay').classList.add('show');
+  sndAchiev();
+  burstBig(1.0);
+}
+function checkAchievementsAfterAnswer(isCorrect, answerMs) {
+  if (progress.totalCorrect >= 1)          unlockAchievement('first');
+  if (state.maxStreakThisSession >= 5)     unlockAchievement('streak5');
+  if (state.maxStreakThisSession >= 10)    unlockAchievement('streak10');
+  if (state.maxStreakThisSession >= 20)    unlockAchievement('streak20');
+  if (progress.totalCorrect >= 100)        unlockAchievement('100');
+  if (progress.totalCorrect >= 500)        unlockAchievement('500');
+  if (progress.totalCorrect >= 1000)       unlockAchievement('1000');
+  if (isCorrect && answerMs !== null && answerMs < 2000) unlockAchievement('fast2');
+  if (progress.totalStars >= 1000)         unlockAchievement('points1000');
+  if (progress.totalStars >= 5000)         unlockAchievement('points5000');
+}
+
+/* ===== Питомец и ранг ===== */
+function renderRankCard() {
+  const el = $('rankCard');
+  const points = progress.totalStars;
+  const { current, next } = getRankInfo(points);
+  if (next) {
+    const span = next.min - current.min;
+    const done = points - current.min;
+    const pct = Math.min(100, Math.max(0, done / span * 100));
+    el.innerHTML = `
+      <div class="rank-top">
+        <div class="rank-emoji">${current.emoji}</div>
+        <div class="rank-info">
+          <div class="rank-name">${current.name}</div>
+          <div class="rank-points">⭐ ${points} очков</div>
+        </div>
+      </div>
+      <div class="rank-progress-bar"><div class="rank-progress-fill" style="width:${pct}%"></div></div>
+      <div class="rank-next-label">
+        <span>${next.emoji} ${next.name}</span>
+        <span>ещё ${next.min - points}</span>
+      </div>
+    `;
+  } else {
+    el.innerHTML = `
+      <div class="rank-top">
+        <div class="rank-emoji">${current.emoji}</div>
+        <div class="rank-info">
+          <div class="rank-name">${current.name}</div>
+          <div class="rank-points">⭐ ${points} очков</div>
+        </div>
+      </div>
+      <div class="rank-next-label"><span>Максимальное звание достигнуто! 🎉</span></div>
+    `;
+  }
+}
+function renderPetCard() {
+  const el = $('petCard');
+  const points = progress.totalStars;
+  const { current, next } = getPetInfo(points);
+  if (next) {
+    const span = next.min - current.min;
+    const done = points - current.min;
+    const pct = Math.min(100, Math.max(0, done / span * 100));
+    el.innerHTML = `
+      <div class="pet-emoji">${current.emoji}</div>
+      <div class="pet-info">
+        <div class="pet-name">Твой питомец: ${current.name}</div>
+        <div class="pet-next">До «${next.name}» ещё ${next.min - points} ⭐</div>
+        <div class="pet-bar"><div class="pet-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+    `;
+  } else {
+    el.innerHTML = `
+      <div class="pet-emoji">${current.emoji}</div>
+      <div class="pet-info">
+        <div class="pet-name">${current.name}</div>
+        <div class="pet-next">Максимум! Твой дракон вырос 🎉</div>
+      </div>
+    `;
+  }
+}
+function renderSprintBadge() {
+  const badge = $('sprintBestBadge');
+  if (progress.sprintBest > 0) {
+    badge.textContent = `Рекорд: ${progress.sprintBest}`;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderMenu() {
+  renderRankCard();
+  renderPetCard();
+  renderSprintBadge();
+  const grid = $('levelsGrid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lvl, i) => {
+    const locked = i > progress.unlockedLevel;
+    const stars = progress.bestStars[i] || 0;
+    const isSpeed = lvl.timeLimit !== null;
+    const card = document.createElement('button');
+    card.className = 'level-card' + (locked ? ' locked' : '') + (isSpeed ? ' speed' : '');
+    card.type = 'button';
+    if (!locked) {
+      const starsStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+      card.innerHTML = `
+        <div class="level-card-num">${lvl.emoji}</div>
+        <div class="level-card-name">${i + 1}. ${lvl.name}</div>
+        <div class="level-card-stars">${starsStr}</div>
+      `;
+      card.addEventListener('click', () => startLevel(i));
+    } else {
+      card.innerHTML = `<div class="level-card-num">🔒</div><div class="level-card-name">Пока закрыт</div>`;
+    }
+    grid.appendChild(card);
+  });
+}
+
+function startLevel(levelIndex) {
+  clearPendingTimeout();
+  ensureAudio();
+  state.sprint = false;
+  state.level = levelIndex;
+  state.questionInRound = 0;
+  state.correctInRound = 0;
+  state.results = [];
+  state.locked = false;
+  state.dynOffset = 0;
+  state.dynCorrectStreak = 0;
+  state.dynWrongStreak = 0;
+  pendingRankUpIdx = null;
+  lastAnswerTime = Date.now();
+  $('starsRow').style.display = 'grid';
+  showScreen('game');
+  updateStreakUI();
+  nextProblem();
+}
+
+/* ===== Адаптивная сложность ===== */
+function getEffectiveLevel() {
+  if (LEVELS[state.level].timeLimit !== null) return state.level;
+  const min = Math.max(0, state.level - 3);
+  const max = Math.min(LEVELS.length - 1, state.level + 3);
+  return Math.max(min, Math.min(max, state.level + state.dynOffset));
+}
+function bumpDifficulty(correct) {
+  if (LEVELS[state.level].timeLimit !== null) return;
+  if (correct) {
+    state.dynCorrectStreak++;
+    state.dynWrongStreak = 0;
+    if (state.dynCorrectStreak >= 4 && state.dynOffset < 3) {
+      state.dynOffset++;
+      state.dynCorrectStreak = 0;
+    }
+  } else {
+    state.dynWrongStreak++;
+    state.dynCorrectStreak = 0;
+    if (state.dynWrongStreak >= 2 && state.dynOffset > -3) {
+      state.dynOffset--;
+      state.dynWrongStreak = 0;
+    }
+  }
+}
+
+/* ===== Спринт ===== */
+let sprintInterval = null;
+let sprintRemaining = 0;
+let sprintTotalMs = 0;
+function genSprint() {
+  const unlocked = progress.unlockedLevel;
+  const pool = [];
+  for (let i = 0; i <= unlocked; i++) {
+    if (LEVELS[i].timeLimit !== null) continue;
+    const w = Math.max(1, 8 - Math.abs(i - 3));
+    pool.push([LEVELS[i].gen, w]);
+  }
+  if (pool.length === 0) return genAdd10();
+  return weightedPick(pool);
+}
+function startSprint() {
+  clearPendingTimeout();
+  ensureAudio();
+  state.sprint = true;
+  state.sprintCorrect = 0;
+  state.sprintWrong = 0;
+  state.results = [];
+  state.locked = false;
+  pendingRankUpIdx = null;
+  $('starsRow').style.display = 'none';
+  showScreen('game');
+  nextProblem();
+  startSprintCountdown();
+}
+function startSprintCountdown() {
+  stopSprintCountdown();
+  sprintTotalMs = SPRINT_DURATION * 1000;
+  sprintRemaining = sprintTotalMs;
+  updateSprintBar();
+  sprintInterval = setInterval(() => {
+    sprintRemaining -= 100;
+    if (sprintRemaining <= 0) {
+      stopSprintCountdown();
+      updateSprintBar();
+      endSprint();
+      return;
+    }
+    updateSprintBar();
+  }, 100);
+}
+function stopSprintCountdown() { if (sprintInterval) clearInterval(sprintInterval); sprintInterval = null; }
+function updateSprintBar() {
+  const fill = $('timerFill');
+  const pct = Math.max(0, sprintRemaining / sprintTotalMs * 100);
+  fill.style.width = pct + '%';
+  fill.classList.remove('warn', 'danger');
+  if (pct <= 20) fill.classList.add('danger');
+  else if (pct <= 50) fill.classList.add('warn');
+  const sec = Math.ceil(sprintRemaining / 1000);
+  if (sec !== lastTickSecond && sec > 0 && sec <= 5) { lastTickSecond = sec; sndTick(); }
+}
+function endSprint() {
+  state.locked = true;
+  stopSprintCountdown();
+  const c = state.sprintCorrect;
+  progress.sprintPlays = (progress.sprintPlays || 0) + 1;
+  let isRecord = false;
+  if (c > (progress.sprintBest || 0)) {
+    progress.sprintBest = c;
+    isRecord = true;
+  }
+  if (c >= 10) unlockAchievement('sprint10');
+  if (c >= 20) unlockAchievement('sprint20');
+  saveProgress();
+
+  let emoji, title;
+  if (c === 0) { emoji = '🌱'; title = 'Попробуй ещё разок!'; }
+  else if (c < 5) { emoji = '🙂'; title = 'Хорошее начало!'; }
+  else if (c < 10) { emoji = '💪'; title = 'Хорошо получилось!'; }
+  else if (c < 15) { emoji = '🔥'; title = 'Отличный темп!'; }
+  else if (c < 25) { emoji = '🚀'; title = 'Ты очень быстрая!'; }
+  else { emoji = '🏆'; title = 'Невероятно!'; }
+
+  $('sprintEmoji').textContent = emoji;
+  $('sprintScore').textContent = c;
+  $('sprintTitle').textContent = title;
+  $('sprintStats').textContent = `Правильно: ${c} · Ошибок: ${state.sprintWrong} · +${c * SPRINT_POINTS} ⭐`;
+
+  const rec = $('sprintRecord');
+  if (isRecord && c > 0) {
+    rec.innerHTML = `🎉 <b>Новый рекорд!</b>`;
+    rec.style.display = 'block';
+  } else {
+    rec.style.display = 'none';
+  }
+
+  $('sprintOverlay').classList.add('show');
+  $('fxCanvas').classList.add('front');
+  if (c >= 15) { sndFanfarePerfect(); burstBig(1.4); }
+  else if (c >= 5) { sndFanfare(); burstBig(0.9); }
+  else { sndWrongLvl(0); }
+  vib(c >= 5 ? [40, 30, 80] : [60, 40, 60]);
+}
+
+function makeOptions(answer) {
+  const set = new Set([answer]);
+  const pool = shuffle([
+    answer - 1, answer + 1, answer - 2, answer + 2,
+    answer - 3, answer + 3, answer + 10, answer - 10,
+    answer - 5, answer + 5,
+  ]);
+  for (const v of pool) {
+    if (set.size >= 3) break;
+    if (v > 0 && v !== answer) set.add(v);
+  }
+  return shuffle(Array.from(set));
+}
+
+function renderHeader() {
+  if (state.sprint) {
+    $('levelBadge').textContent = '⏱';
+    $('levelBadge').classList.add('sprint');
+    $('levelBadge').classList.remove('speed');
+    $('levelName').textContent = 'Спринт 60 сек';
+    $('score').textContent = '✓ ' + state.sprintCorrect;
+  } else {
+    const isSpeed = LEVELS[state.level].timeLimit !== null;
+    $('levelBadge').textContent = isSpeed ? '⚡' : (state.level + 1);
+    $('levelBadge').classList.toggle('speed', isSpeed);
+    $('levelBadge').classList.remove('sprint');
+    $('levelName').textContent = LEVELS[state.level].name;
+    $('score').textContent = '⭐ ' + progress.totalStars;
+  }
+}
+function renderStarsRow() {
+  if (state.sprint) return;
+  const row = $('starsRow');
+  row.innerHTML = '';
+  for (let i = 0; i < ROUND_SIZE; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'star-slot';
+    if (state.results[i] === 'correct') { slot.classList.add('correct'); slot.textContent = '★'; }
+    else if (state.results[i] === 'wrong') { slot.classList.add('wrong'); slot.textContent = '✕'; }
+    else { slot.textContent = (i + 1); }
+    row.appendChild(slot);
+  }
+}
+function updateStreakUI() {
+  const el = $('streak');
+  if (!el) return;
+  if (streak >= 3 && !state.sprint) {
+    el.textContent = '🔥 ' + streak;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  } else { el.classList.remove('show'); }
+}
+
+let timerInterval = null, timerRemaining = 0, timerTotal = 0, lastTickSecond = 0;
+function startTimer(seconds) {
+  stopTimer();
+  timerTotal = seconds * 1000;
+  timerRemaining = timerTotal;
+  lastTickSecond = Math.ceil(seconds);
+  updateTimerBar();
+  timerInterval = setInterval(() => {
+    timerRemaining -= 100;
+    if (timerRemaining <= 0) { stopTimer(); updateTimerBar(); onTimeout(); return; }
+    updateTimerBar();
+  }, 100);
+}
+function stopTimer() { if (timerInterval) clearInterval(timerInterval); timerInterval = null; }
+function updateTimerBar() {
+  const fill = $('timerFill');
+  const pct = Math.max(0, timerRemaining / timerTotal * 100);
+  fill.style.width = pct + '%';
+  fill.classList.remove('warn', 'danger');
+  if (pct <= 20) fill.classList.add('danger');
+  else if (pct <= 50) fill.classList.add('warn');
+  const sec = Math.ceil(timerRemaining / 1000);
+  if (sec !== lastTickSecond && sec > 0 && sec <= 3) { lastTickSecond = sec; sndTick(); }
+}
+function showTimer() { $('timerBar').classList.remove('hidden'); }
+function hideTimer() { $('timerBar').classList.add('hidden'); stopTimer(); }
+
+function nextProblem() {
+  if (state.sprint) {
+    state.current = genSprint();
+    $('timerBar').classList.remove('hidden');
+  } else {
+    const eff = getEffectiveLevel();
+    state.current = LEVELS[eff].gen();
+  }
+  state.locked = false;
+  lastAnswerTime = Date.now();
+  $('problemText').textContent = `${state.current.a} ${state.current.op} ${state.current.b}`;
+  const opts = makeOptions(state.current.answer);
+  const answersEl = $('answers');
+  answersEl.innerHTML = '';
+  opts.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = v;
+    btn.dataset.value = v;
+    btn.addEventListener('click', () => onAnswer(v, btn));
+    answersEl.appendChild(btn);
+  });
+  renderHeader();
+  renderStarsRow();
+  if (state.sprint) {
+    /* Таймер спринта уже идёт */
+  } else {
+    const tl = LEVELS[state.level].timeLimit;
+    if (tl) { showTimer(); startTimer(tl); } else { hideTimer(); }
+  }
+}
+
+function recordAnswer(problem, given, isCorrect) {
+  progress.totalAttempts++;
+  if (isCorrect) progress.totalCorrect++;
+  if (!state.sprint) {
+    progress.levelStats[state.level].attempts++;
+    if (isCorrect) progress.levelStats[state.level].correct++;
+  }
+  const key = todayKey();
+  if (!progress.daily[key]) progress.daily[key] = { attempts: 0, correct: 0 };
+  progress.daily[key].attempts++;
+  if (isCorrect) progress.daily[key].correct++;
+  const cutoff = Date.now() - 60 * 86400000;
+  Object.keys(progress.daily).forEach(k => {
+    const d = new Date(k + 'T00:00:00');
+    if (!isNaN(d) && d.getTime() < cutoff) delete progress.daily[k];
+  });
+  if (!isCorrect) {
+    progress.recentMistakes.unshift({
+      a: problem.a, b: problem.b, op: problem.op,
+      given: (given === null ? null : given),
+      correct: problem.answer, level: state.sprint ? -1 : state.level, t: Date.now(),
+    });
+    if (progress.recentMistakes.length > 20) progress.recentMistakes.length = 20;
+  }
+}
+
+const CHEERS = ['Молодец! 🎉','Отлично!','Супер!','Верно!','Так держать!','Здорово!','Правильно!','Ты справилась! ⭐','Ух ты!','Здорово получается!'];
+const pickCheer = () => CHEERS[Math.floor(Math.random() * CHEERS.length)];
+let toastTimer = null;
+function showToast(text, warn = false) {
+  const t = $('toast');
+  t.textContent = text;
+  t.className = 'toast show' + (warn ? ' warn' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 1200);
+}
+
+function scheduleNext(delay) {
+  clearPendingTimeout();
+  pendingTimeout = setTimeout(() => {
+    pendingTimeout = null;
+    if (state.sprint) {
+      nextProblem();
+    } else if (state.questionInRound >= ROUND_SIZE) {
+      endRound();
+    } else {
+      nextProblem();
+    }
+  }, delay);
+}
+
+function onAnswer(value, btn) {
+  if (state.locked) return;
+  state.locked = true;
+  if (!state.sprint) stopTimer();
+  ensureAudio();
+  const answerMs = Date.now() - lastAnswerTime;
+  const isCorrect = (value === state.current.answer);
+  const allBtns = document.querySelectorAll('.answer-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  if (state.sprint) {
+    /* Спринт-режим */
+    if (isCorrect) {
+      btn.classList.add('correct');
+      sndSprintCorrect();
+      state.sprintCorrect++;
+      const rect = btn.getBoundingClientRect();
+      burstSmall(rect.left + rect.width/2, rect.top + rect.height/2);
+      addPoints(SPRINT_POINTS);
+      vib(20);
+    } else {
+      btn.classList.add('wrong');
+      allBtns.forEach(b => {
+        if (parseInt(b.dataset.value, 10) === state.current.answer) b.classList.add('correct');
+      });
+      sndSprintWrong();
+      state.sprintWrong++;
+      vib([50, 30, 50]);
+    }
+    recordAnswer(state.current, value, isCorrect);
+    saveProgress();
+    renderHeader();
+    scheduleNext(isCorrect ? 350 : 700);
+    return;
+  }
+
+  /* Обычный режим */
+  const isSpeed = LEVELS[state.level].timeLimit !== null;
+  const pointsPerCorrect = isSpeed ? 15 : 10;
+  if (isCorrect) {
+    btn.classList.add('correct');
+    sndCorrectLvl(state.level);
+    state.correctInRound++;
+    state.results.push('correct');
+    showToast(pickCheer());
+    const rect = btn.getBoundingClientRect();
+    burstSmall(rect.left + rect.width/2, rect.top + rect.height/2);
+    addPoints(pointsPerCorrect);
+    streak++;
+    if (streak > state.maxStreakThisSession) state.maxStreakThisSession = streak;
+    updateStreakUI();
+    vib(30);
+    if (streak === 5 || streak === 10 || streak === 15 || streak === 20) {
+      setTimeout(() => {
+        sndStreak();
+        const msg = streak >= 20 ? `🔥 Невероятно — ${streak} подряд!` : `🔥 ${streak} подряд!`;
+        showToast(msg, false);
+        burstBig(0.7);
+      }, 260);
+    }
+    bumpDifficulty(true);
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => {
+      if (parseInt(b.dataset.value, 10) === state.current.answer) b.classList.add('correct');
+    });
+    sndWrongLvl(state.level);
+    state.results.push('wrong');
+    showToast('Правильный ответ: ' + state.current.answer, true);
+    streak = 0;
+    updateStreakUI();
+    vib([60, 40, 60]);
+    bumpDifficulty(false);
+  }
+  recordAnswer(state.current, value, isCorrect);
+  state.questionInRound++;
+  renderHeader();
+  renderStarsRow();
+  saveProgress();
+  checkAchievementsAfterAnswer(isCorrect, answerMs);
+  scheduleNext(isCorrect ? 900 : 1600);
+}
+
+function onTimeout() {
+  if (state.locked) return;
+  state.locked = true;
+  ensureAudio();
+  sndWrongLvl(state.level);
+  const allBtns = document.querySelectorAll('.answer-btn');
+  allBtns.forEach(b => {
+    b.disabled = true;
+    if (parseInt(b.dataset.value, 10) === state.current.answer) b.classList.add('correct');
+  });
+  state.results.push('wrong');
+  showToast('⏱ Время! Ответ: ' + state.current.answer, true);
+  recordAnswer(state.current, null, false);
+  streak = 0;
+  updateStreakUI();
+  vib([80, 50, 80]);
+  bumpDifficulty(false);
+  state.questionInRound++;
+  renderHeader();
+  renderStarsRow();
+  saveProgress();
+  scheduleNext(1700);
+}
+
+function addPoints(n) {
+  const before = getRankInfo(progress.totalStars).idx;
+  progress.totalStars += n;
+  const after = getRankInfo(progress.totalStars).idx;
+  if (after > before) {
+    pendingRankUpIdx = after;
+    if (state.sprint || state.questionInRound < ROUND_SIZE - 1) {
+      setTimeout(() => {
+        if (pendingRankUpIdx === null) return;
+        sndRankUp();
+        const info = RANKS[pendingRankUpIdx];
+        showToast(`${info.emoji} Новое звание: ${info.name}!`, false);
+        burstBig(1.2);
+        pendingRankUpIdx = null;
+      }, 450);
+    }
+  }
+  if (progress.totalStars >= 1000) unlockAchievement('points1000');
+  if (progress.totalStars >= 5000) unlockAchievement('points5000');
+}
+
+function scoreToStars(score) {
+  if (score === 10) return 3;
+  if (score >= 8)  return 2;
+  if (score >= 6)  return 1;
+  return 0;
+}
+
+function endRound() {
+  stopTimer();
+  const score = state.correctInRound;
+  const total = ROUND_SIZE;
+  let grade, msg, emoji;
+  if (score === total)          { grade = '5';  msg = 'Идеально! Ты справилась со всем!'; emoji = '🏆'; }
+  else if (score === total - 1) { grade = '5−'; msg = 'Отличный результат!';               emoji = '🎉'; }
+  else if (score === total - 2) { grade = '4+'; msg = 'Очень хорошо!';                     emoji = '🌟'; }
+  else if (score === total - 3) { grade = '4';  msg = 'Хорошо!';                           emoji = '👏'; }
+  else if (score === total - 4) { grade = '3+'; msg = 'Неплохо!';                          emoji = '🙂'; }
+  else if (score >= 5)          { grade = '3';  msg = 'Потренируемся ещё';                 emoji = '💪'; }
+  else                          { grade = '—';  msg = 'Попробуй ещё разок';               emoji = '🤗'; }
+
+  const passed = score >= PASS;
+  const hasNext = state.level + 1 < LEVELS.length;
+  const isPerfect = score === total;
+
+  progress.levelStats[state.level].rounds++;
+  progress.totalRounds++;
+  const stars = scoreToStars(score);
+  if (stars > progress.bestStars[state.level]) progress.bestStars[state.level] = stars;
+
+  if (isPerfect) {
+    progress.perfectStreak = (progress.perfectStreak || 0) + 1;
+    if (progress.perfectStreak >= 3) unlockAchievement('perfect3');
+    unlockAchievement('perfect');
+  } else {
+    progress.perfectStreak = 0;
+  }
+
+  let unlockedNew = false;
+  if (passed && state.level === progress.unlockedLevel && hasNext) {
+    progress.unlockedLevel = state.level + 1;
+    unlockedNew = true;
+  }
+  if (progress.unlockedLevel >= LEVELS.length - 1) unlockAchievement('allLevels');
+  saveProgress();
+
+  $('overlayEmoji').textContent = emoji;
+  $('gradeEmoji').textContent = grade;
+  $('gradeText').textContent = msg;
+  $('statsText').textContent = `Правильно: ${score} из ${total}`;
+
+  const ribbonHolder = $('ribbonHolder');
+  ribbonHolder.innerHTML = '';
+  if (isPerfect) {
+    const r = document.createElement('div');
+    r.className = 'perfect-ribbon';
+    r.textContent = '⭐ ИДЕАЛЬНО ⭐';
+    ribbonHolder.appendChild(r);
+  }
+
+  const rankBanner = $('rankUpBanner');
+  if (pendingRankUpIdx !== null) {
+    const info = RANKS[pendingRankUpIdx];
+    rankBanner.innerHTML = `${info.emoji} Новое звание:<br><b>${info.name}</b>!`;
+    rankBanner.classList.add('show');
+    sndRankUp();
+    setTimeout(() => burstBig(1.2), 350);
+    pendingRankUpIdx = null;
+  } else {
+    rankBanner.classList.remove('show');
+  }
+
+  const btn = $('continueBtn');
+  if (passed && hasNext) { btn.textContent = 'Следующий уровень →'; btn.classList.add('next'); }
+  else if (passed && !hasNext) { btn.textContent = 'Ты прошла всё! 🎓 Ещё раз'; btn.classList.add('next'); }
+  else { btn.textContent = 'Ещё раз'; btn.classList.remove('next'); }
+
+  $('overlay').dataset.passed = passed ? '1' : '0';
+  $('overlay').dataset.hasNext = hasNext ? '1' : '0';
+  $('overlay').dataset.unlocked = unlockedNew ? '1' : '0';
+  $('overlay').classList.add('show');
+  $('fxCanvas').classList.add('front');
+
+  if (isPerfect) {
+    sndFanfarePerfect(); burstBig(1.6);
+    setTimeout(() => burstBig(1.0), 900);
+    setTimeout(() => burstBig(1.2), 1800);
+    vib([40, 30, 40, 30, 80]);
+  } else if (passed) { sndFanfare(); burstBig(1.0); vib([40, 30, 80]); }
+  else if (score >= 6) { sndFanfare(); burstBig(0.6); }
+  else { sndWrongLvl(state.level); }
+}
+
+$('continueBtn').addEventListener('click', () => {
+  const passed = $('overlay').dataset.passed === '1';
+  const hasNext = $('overlay').dataset.hasNext === '1';
+  const unlocked = $('overlay').dataset.unlocked === '1';
+  $('overlay').classList.remove('show');
+  $('fxCanvas').classList.remove('front');
+  if (passed && hasNext) {
+    state.level++;
+    if (unlocked) setTimeout(() => {
+      sndLevelUp();
+      const badge = $('levelBadge');
+      badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
+    }, 250);
+  }
+  state.questionInRound = 0;
+  state.correctInRound = 0;
+  state.results = [];
+  state.dynOffset = 0;
+  state.dynCorrectStreak = 0;
+  state.dynWrongStreak = 0;
+  saveProgress();
+  clearPendingTimeout();
+  setTimeout(flushAchievQueue, 100);
+  pendingTimeout = setTimeout(() => {
+    pendingTimeout = null;
+    nextProblem();
+  }, 300);
+});
+
+$('menuFromOverlayBtn').addEventListener('click', () => {
+  $('overlay').classList.remove('show');
+  $('fxCanvas').classList.remove('front');
+  clearPendingTimeout();
+  stopTimer();
+  state.questionInRound = 0;
+  state.correctInRound = 0;
+  state.results = [];
+  state.locked = false;
+  state.dynOffset = 0;
+  state.dynCorrectStreak = 0;
+  state.dynWrongStreak = 0;
+  pendingRankUpIdx = null;
+  setTimeout(flushAchievQueue, 100);
+  showScreen('menu');
+  renderMenu();
+});
+
+$('gameBackBtn').addEventListener('click', () => {
+  if (!state.sprint && state.questionInRound > 0 && state.questionInRound < ROUND_SIZE) {
+    if (!confirm('Выйти в меню? Прогресс текущего раунда не сохранится.')) return;
+  } else if (state.sprint && state.sprintCorrect > 0) {
+    if (!confirm('Выйти из спринта?')) return;
+  }
+  clearPendingTimeout();
+  stopTimer();
+  stopSprintCountdown();
+  state.locked = false;
+  state.dynOffset = 0;
+  state.dynCorrectStreak = 0;
+  state.dynWrongStreak = 0;
+  pendingRankUpIdx = null;
+  state.sprint = false;
+  $('starsRow').style.display = 'grid';
+  setTimeout(flushAchievQueue, 100);
+  showScreen('menu');
+  renderMenu();
+});
+
+/* ===== Спринт-кнопки ===== */
+$('sprintBtn').addEventListener('click', () => { startSprint(); });
+$('sprintAgainBtn').addEventListener('click', () => {
+  $('sprintOverlay').classList.remove('show');
+  $('fxCanvas').classList.remove('front');
+  setTimeout(flushAchievQueue, 150);
+  setTimeout(() => { startSprint(); }, 400);
+});
+$('sprintMenuBtn').addEventListener('click', () => {
+  $('sprintOverlay').classList.remove('show');
+  $('fxCanvas').classList.remove('front');
+  state.sprint = false;
+  $('starsRow').style.display = 'grid';
+  setTimeout(flushAchievQueue, 100);
+  showScreen('menu');
+  renderMenu();
+});
+
+/* ===== Родителям ===== */
+function fmtTime(ts) {
+  const d = new Date(ts), now = new Date();
+  const diffMin = Math.floor((now - d) / 60000);
+  if (diffMin < 1) return 'только что';
+  if (diffMin < 60) return `${diffMin} ${plural(diffMin, 'минуту', 'минуты', 'минут')} назад`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH} ${plural(diffH, 'час', 'часа', 'часов')} назад`;
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = String(d.getMonth() + 1).padStart(2, '0');
+  return `${day}.${mon} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function renderDailyChart() {
+  const days = [];
+  const labels = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayKeyStr = todayKey(today);
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const key = todayKey(d);
+    const st = progress.daily[key] || { attempts: 0, correct: 0 };
+    days.push({ key, label: labels[d.getDay()], attempts: st.attempts, correct: st.correct, isToday: key === todayKeyStr });
+  }
+  const maxA = Math.max(10, ...days.map(x => x.attempts));
+  let html = '<div class="daily-chart">';
+  days.forEach(d => {
+    const h = d.attempts > 0 ? Math.max(3, Math.round(d.attempts / maxA * 100)) : 0;
+    html += `<div class="daily-bar-wrap" title="${d.attempts} решено">
+      <div class="daily-count">${d.attempts || ''}</div>
+      <div class="daily-bar"><div class="daily-bar-fill${d.isToday ? ' today' : ''}" style="height:${h}%"></div></div>
+      <div class="daily-label${d.isToday ? ' today' : ''}">${d.label}</div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+function renderParents() {
+  const el = $('parentsContent');
+  const p = progress;
+  const pct = p.totalAttempts > 0 ? Math.round(p.totalCorrect / p.totalAttempts * 100) : 0;
+  const totalStars = p.bestStars.reduce((a, b) => a + b, 0);
+  const maxStars = LEVELS.length * 3;
+  const rankInfo = getRankInfo(p.totalStars);
+  let html = '';
+  html += `<div class="stat-card">
+    <div class="stat-card-title">Всего решено</div>
+    <div class="stat-big">${p.totalAttempts}</div>
+    <div class="stat-sub">Правильно: <b>${p.totalCorrect}</b> из ${p.totalAttempts}${p.totalAttempts > 0 ? ` (${pct}%)` : ''}</div>
+  </div>`;
+  html += `<div class="stat-card">
+    <div class="stat-card-title">Активность за 7 дней</div>
+    ${renderDailyChart()}
+  </div>`;
+  html += `<div class="stat-card">
+    <div class="stat-card-title">Звание и звёзды</div>
+    <div class="stat-rows">
+      <div class="stat-row"><span>Текущее звание</span><b>${rankInfo.current.emoji} ${rankInfo.current.name}</b></div>
+      <div class="stat-row"><span>Накоплено очков</span><b>⭐ ${p.totalStars}</b></div>
+      <div class="stat-row"><span>Пройдено раундов</span><b>${p.totalRounds}</b></div>
+      <div class="stat-row"><span>Звёзд за уровни</span><b>${totalStars} / ${maxStars}</b></div>
+      <div class="stat-row"><span>Открыто уровней</span><b>${p.unlockedLevel + 1} из ${LEVELS.length}</b></div>
+      <div class="stat-row"><span>Дней подряд заходит</span><b>🔥 ${p.bonusStreak || 0}</b></div>
+      <div class="stat-row"><span>Спринт: рекорд</span><b>⚡ ${p.sprintBest || 0} · попыток: ${p.sprintPlays || 0}</b></div>
+    </div>
+  </div>`;
+  html += `<div class="stat-card"><div class="stat-card-title">По уровням</div>`;
+  LEVELS.forEach((lvl, i) => {
+    const st = p.levelStats[i];
+    const stars = p.bestStars[i] || 0;
+    const starsStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    const correctPct = st.attempts > 0 ? Math.round(st.correct / st.attempts * 100) : 0;
+    html += `<div class="parents-level">
+      <div><div class="pl-name">${lvl.emoji} ${i + 1}. ${lvl.name}</div><div class="pl-stars">${starsStr}</div></div>
+      <div class="pl-nums"><b>${st.correct} / ${st.attempts}</b>${st.attempts > 0 ? ` (${correctPct}%)` : ''}<br>раундов: ${st.rounds}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<div class="stat-card"><div class="stat-card-title">Последние ошибки</div>`;
+  if (p.recentMistakes.length === 0) html += `<div class="empty-note">Ошибок пока не было 🎉</div>`;
+  else p.recentMistakes.slice(0, 10).forEach(m => {
+    const lvlName = m.level === -1 ? 'Спринт' : (LEVELS[m.level]?.name || '');
+    const givenHtml = m.given === null ? '<span style="color:#8a90a8;font-weight:700;">не успела</span>' : `<span class="mistake-given">${m.given}</span>`;
+    html += `<div class="mistake-item">
+      <div class="mistake-left"><div class="mistake-q">${m.a} ${m.op} ${m.b}</div><div class="mistake-time">${lvlName} · ${fmtTime(m.t)}</div></div>
+      <div class="mistake-answers">${givenHtml} → <span class="mistake-correct">${m.correct}</span></div>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<button class="reset-btn" id="resetBtn">Сбросить весь прогресс</button>`;
+  el.innerHTML = html;
+  const rb = $('resetBtn');
+  if (rb) rb.addEventListener('click', resetProgress);
+}
+function resetProgress() {
+  if (!confirm('Сбросить весь прогресс? Уровни, звёзды и статистика будут удалены. Это нельзя отменить.')) return;
+  clearPendingTimeout();
+  stopTimer();
+  stopSprintCountdown();
+  progress = defaultProgress();
+  state.level = 0; state.questionInRound = 0; state.correctInRound = 0;
+  state.results = []; state.locked = false; streak = 0; pendingRankUpIdx = null;
+  state.dynOffset = 0; state.dynCorrectStreak = 0; state.dynWrongStreak = 0;
+  state.sprint = false;
+  try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(OLD_STORAGE_KEY); } catch (e) {}
+  saveProgress();
+  renderParents();
+  showToast('Прогресс сброшен');
+}
+
+$('parentsBtn').addEventListener('click', () => { renderParents(); showScreen('parents'); });
+$('parentsBackBtn').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
+
+/* ===== Достижения экран ===== */
+function renderAchiev() {
+  const grid = $('achievGrid');
+  grid.innerHTML = '';
+  let unlockedCount = 0;
+  ACHIEVEMENTS.forEach(a => {
+    const unlocked = !!progress.achievements[a.id];
+    if (unlocked) unlockedCount++;
+    const card = document.createElement('div');
+    card.className = 'achiev-card' + (unlocked ? ' unlocked' : '');
+    card.innerHTML = `
+      <div class="achiev-emoji">${unlocked ? a.emoji : '🔒'}</div>
+      <div class="achiev-name">${a.name}</div>
+      <div class="achiev-desc">${a.desc}</div>
+    `;
+    grid.appendChild(card);
+  });
+  $('achievCount').textContent = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
+}
+$('achievBtn').addEventListener('click', () => { renderAchiev(); showScreen('achiev'); });
+$('achievBackBtn').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
+
+/* ===== Случайный уровень ===== */
+$('luckyBtn').addEventListener('click', () => {
+  ensureAudio();
+  const max = progress.unlockedLevel;
+  const idx = rand(0, max);
+  startLevel(idx);
+});
+
+/* ===== Mute ===== */
+function renderMuteBtn() {
+  const b = $('muteBtn');
+  b.textContent = muted ? '🔇' : '🔊';
+  b.classList.toggle('muted', muted);
+}
+$('muteBtn').addEventListener('click', () => {
+  muted = !muted;
+  try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch (e) {}
+  renderMuteBtn();
+  if (!muted) { ensureAudio(); beep(880, 0.1, 'sine', 0, 0.15); beep(1320, 0.12, 'sine', 0.07, 0.13); }
+});
+
+/* ===== Ежедневный бонус ===== */
+function checkDailyBonus() {
+  const today = todayKey();
+  if (progress.lastBonusDate === today) return false;
+  const yest = yesterdayKey();
+  if (progress.lastBonusDate === yest) progress.bonusStreak = (progress.bonusStreak || 0) + 1;
+  else progress.bonusStreak = 1;
+  progress.lastBonusDate = today;
+  progress.totalStars += DAILY_BONUS;
+  saveProgress();
+
+  if (progress.bonusStreak >= 3) unlockAchievement('day3');
+  if (progress.bonusStreak >= 7) unlockAchievement('day7');
+
+  $('dailyText').textContent = `Вот тебе +${DAILY_BONUS} ⭐`;
+  const sEl = $('dailyStreak');
+  if (progress.bonusStreak > 1) {
+    sEl.textContent = `🔥 Ты заходишь ${progress.bonusStreak} ${plural(progress.bonusStreak, 'день','дня','дней')} подряд!`;
+    sEl.style.display = 'block';
+  } else {
+    sEl.style.display = 'none';
+  }
+  $('dailyOverlay').classList.add('show');
+  sndFanfare();
+  burstBig(1.0);
+  return true;
+}
+$('dailyClaimBtn').addEventListener('click', () => {
+  $('dailyOverlay').classList.remove('show');
+  renderMenu();
+  setTimeout(flushAchievQueue, 200);
+});
+
+/* ===== Оверлей нового достижения ===== */
+$('newAchievCloseBtn').addEventListener('click', () => {
+  $('newAchievOverlay').classList.remove('show');
+  saveProgress();
+  renderMenu();
+  setTimeout(flushAchievQueue, 200);
+});
+
+/* ===== Старт ===== */
+loadProgress();
+renderMuteBtn();
+/* Сначала показать ежедневный бонус (звёзды попадут в стейт),
+   потом отрисовать меню с уже обновлёнными очками. */
+const hadDailyBonus = checkDailyBonus();
+renderMenu();
+showScreen('menu');
+</script>
+</body>
+</html>
